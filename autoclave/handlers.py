@@ -107,6 +107,12 @@ class Session(datas.generate_base_data_class(SESSION_DATA_CONF)):
 class Image(datas.generate_base_data_class(IMAGE_DATA_CONF)):
     
     @staticmethod
+    def get4db(data):
+        if data:
+            return Image(data)
+        return None
+    
+    @staticmethod
     def new(author, layout, date, says, text):
         id = str(uuid.uuid4().hex)
         db.images.insert(
@@ -144,6 +150,9 @@ class Image(datas.generate_base_data_class(IMAGE_DATA_CONF)):
 clear_users_caches = datas.generate_caches_clear_func('users')
 clear_sessions_caches = datas.generate_caches_clear_func('sessions')
 
+def get_error_string(error_name):
+    return ERROR_CODES[error_name]['dscp']
+
 class BaseHandler(tornado.web.RequestHandler):
     
     global caches
@@ -156,14 +165,25 @@ class BaseHandler(tornado.web.RequestHandler):
     error_write = lambda self, error_name: (
         self._error_write(error_name) or self.finish()
     )
+
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+
+    _template_namespace = {
+        'site_title': SITE_TITLE,
+        'navbar_list': NAVBAR_LIST,
+        'get_error_string': get_error_string,
+    }
+    
     
     def initialize(self):
-        self.ui['site_title'] = SITE_TITLE
-        self.ui['navbar_list'] = NAVBAR_LIST
+        self.ui.update(self._template_namespace)
         self.ui['class_name'] = self.class_name
-        self.ui['locals'] = locals
-        pass
-    
+
+
     def new_session(self):
         session_id = str(uuid.uuid4().hex)
         creation = int(time.time())
@@ -178,8 +198,10 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_secure_cookie("session_id", session_id, expires = creation + EXPIRED_TIME)
         return session_id
 
+
     def fresh_current_user(self):
         self._current_user = self.get_current_user(fresh = True)
+
 
     def fresh_session(self):
         session = db.sessions.find_one({"_id": self.session_id})
@@ -189,7 +211,8 @@ class BaseHandler(tornado.web.RequestHandler):
             self.fresh_session()
         else:
             self.session = caches['sessions'][self.session_id] = Session(session)
-        
+
+
     def change_session(self, list):
         db.sessions.update_one(
             {"_id": self.session_id},
@@ -199,11 +222,13 @@ class BaseHandler(tornado.web.RequestHandler):
             }
         )
         self.fresh_session()
-    
+
+
     def fresh_all(self):
         self.fresh_session()
         self.fresh_current_user()
-    
+
+
     def get_session(self):
         session_id = self.get_secure_cookie("session_id")
         if not session_id:
@@ -217,19 +242,22 @@ class BaseHandler(tornado.web.RequestHandler):
         else:
             #print("Not Get From Cache sessions")
             self.fresh_session()
-    
+
+
     def mobile_checker(self):
         if self.request.headers['User-Agent'].find("Mobile") != -1 :
             self.mobile_flag = True
         else:
             self.mobile_flag = False
-    
+
+
     def ajax_checker(self):
         try:
             self.ajax_flag = self.get_argument('ajax_flag')
         except:
             self.ajax_flag = None
-    
+
+
     def prepare(self):
     
         self.session_id = None
@@ -244,30 +272,37 @@ class BaseHandler(tornado.web.RequestHandler):
         
         if self.get_login_url() not in self.request.uri:
             self.authenticate()
-    
+
+
     def add_render(self, name, val):
         self.render_data[name] = val
-    
+
+
     def put_render(self, template_name, **kwargs):
         self.render_data.update(kwargs)
         self.render_data['__keys__'] = self.render_data.keys()
         self.render(template_name, **(self.render_data))
-    
+
+
     def get_current_user(self, fresh = False):
         if self.session.uid != 0:
             return User(self.session.uid, fresh)
         return None
-    
+
+
     @tornado.web.authenticated
     def authenticate(self):
         pass
-    
+
+
     def prepare_c(self):
         pass
-    
+
+
     def on_finish_c(self):
         pass
-    
+
+
     def on_finish(self):
         self.on_finish_c()
         
@@ -280,11 +315,8 @@ class BaseHandler(tornado.web.RequestHandler):
         if caches['counter'] >= CACHES_COUNTER_LIMIT:
             clear_users_caches(caches)
             clear_sessions_caches(caches)
-    
-    @property
-    def class_name(self):
-        return self.__class__.__name__
-    
+
+
     def _error_write(self, error_name):
         if self.ajax_flag:
             self.write({
@@ -297,7 +329,8 @@ class BaseHandler(tornado.web.RequestHandler):
                 "dscp": ERROR_CODES[error_name]['dscp'],
             })
         self.finish()
-    
+
+
 class LoginAndRegisterHandler(BaseHandler):
     
     def get(self, path = None):
@@ -376,25 +409,21 @@ class LoginAndRegisterHandler(BaseHandler):
             self.error_write("register_same_email")
         
         id = str(uuid.uuid4().hex)
-        result = db.users.insert(
-            {
-                "_id": id,
-                "name": name,
-                "account": account,
-                "password": encrypt_password(password),
-            }
-        )
+        result = db.users.insert({
+            "_id": id,
+            "name": name,
+            "account": account,
+            "password": encrypt_password(password),
+        })
         
         if result:
             self.change_session({"uid": id})
             self.fresh_current_user()
             
-            self.write(
-                {
-                    "status": 0,
-                    "dscp"  : "您已经完成注册！"
-                }
-            )
+            self.write({
+                "status": 0,
+                "dscp"  : "您已经完成注册！"
+            })
         
         self.finish()
 
@@ -404,10 +433,19 @@ class IndexHandler(BaseHandler):
         
         path = "/static/image/nothing.png"
         if self.current_user.pair:
-            image = Image(db.images.find_one({"author": self.current_user.get("pair")}))
+            image = Image.get4db(db.images.find_one({
+                "author": self.current_user.get("pair"),
+                "date_index": datetime.datetime.now().strftime("%Y-%m-%d"),
+            }))
             if image:
                 path = image.path
-        
+        else:
+            image = Image.get4db(db.images.find_one({
+                "author": DBRef("users", self.current_user._id),
+                "date_index": datetime.datetime.now().strftime("%Y-%m-%d"),
+            }))
+            if image:
+                path = image.path
         self.add_render('path', path)
         
         self.add_render('title', '今日图片')
@@ -420,13 +458,29 @@ class EditerHandler(BaseHandler):
         self.add_render('custom_css', ['css/zabuto_calendar.min.css'])
         self.xsrf_token
         
-        self.add_render('events', [{"date": "2016-02-20", "values": {"path": "/static/image/nothing.png", "text": "这是一个测试"}}])
+        images = db.images.find({
+            "author": DBRef("users", self.current_user._id),
+        })
+        events = []
+        for event in images:
+            events.append({
+                "date": event["date_index"],
+                "values": {
+                    "path": event["path"],
+                    "text": event["text"],
+                },
+            })
+        
+        self.add_render('events', events)
         
         self.add_render('title', '编辑日历')
         self.put_render("editer.html")
-    
+
+
     @get_arg_by_list(["text", "date"])
     def post(self, text, date):
+        if not self.current_user.confirmed:
+            self.error_write("generate_unconfirmed")
         dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
         self.image = Image.new(
             author = DBRef("users", self.current_user._id),
@@ -443,6 +497,8 @@ class EditerHandler(BaseHandler):
             },
             "status": 0,
         })
+
+
     def on_finish_c(self):
         if hasattr(self, "image"):
             self.image.generate()

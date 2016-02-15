@@ -3,6 +3,7 @@
 {% block main_title %}<i class="fa fa-list"></i> {{ title }}{% end %}
 
 {% block content %}
+{% if not current_user.confirmed %}<div class="alert alert-warning" role="alert">{% raw get_error_string('generate_unconfirmed') %}</div>{% end %}
 <div id="my-calendar"></div>
 <div id="cal-editer" style="display: none;">
     <div class="main-title row">
