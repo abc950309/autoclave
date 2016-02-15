@@ -51,3 +51,11 @@ body {
         display: block;
     }
 }
+
+#cal-editer-display {
+    margin-bottom: 15px;
+}
+
+#cal-editer .main-title {
+    margin: 15px -15px;
+}

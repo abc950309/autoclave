@@ -75,7 +75,6 @@ def generate_base_data_class( setting ):
 
 class dbref_cell(object):
     def __init__(self, data):
-        print(data)
         self._data = data
     
     def get_dict(self):

@@ -1,3 +1,6 @@
+# Output Image
+[0-9a-f]{32}.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

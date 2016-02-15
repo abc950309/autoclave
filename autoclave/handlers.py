@@ -519,7 +519,6 @@ class SettingHandler(BaseHandler):
     
     @get_arg_by_list(optional = ["password", "confirm_password", "layout", "says"])
     def post(self, password, confirm_password, layout, says):
-        print(password, layout, says)
         for line in [password, layout, says]:
             if line:
                 break
