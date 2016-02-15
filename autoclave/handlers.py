@@ -14,7 +14,7 @@ from bson.dbref import DBRef
 
 from autoclave.config import *
 import autoclave.image_generator as image_generator
-import autoclave.datas as datas
+import autoclave.data_container as data_container
 from autoclave.password_tools import encrypt_password, verify_password
 
 from autoclave import db
@@ -85,7 +85,7 @@ def get_arg_by_list(needed = None, optional = None):
     return _deco
 
 
-class User(datas.generate_base_data_class(USER_DATA_CONF)):
+class User(data_container.generate_base_data_class(USER_DATA_CONF)):
     
     global caches
     
@@ -98,13 +98,13 @@ class User(datas.generate_base_data_class(USER_DATA_CONF)):
         
         self.access_time = time.time()
 
-class Session(datas.generate_base_data_class(SESSION_DATA_CONF)):
+class Session(data_container.generate_base_data_class(SESSION_DATA_CONF)):
     
     def __init__(self, session):
         self.build(session)
         self.access_time = time.time()
 
-class Image(datas.generate_base_data_class(IMAGE_DATA_CONF)):
+class Image(data_container.generate_base_data_class(IMAGE_DATA_CONF)):
     
     @staticmethod
     def get4db(data):
@@ -147,8 +147,8 @@ class Image(datas.generate_base_data_class(IMAGE_DATA_CONF)):
             file_path = self.file_path,
         )
 
-clear_users_caches = datas.generate_caches_clear_func('users')
-clear_sessions_caches = datas.generate_caches_clear_func('sessions')
+clear_users_caches = data_container.generate_caches_clear_func('users')
+clear_sessions_caches = data_container.generate_caches_clear_func('sessions')
 
 def get_error_string(error_name):
     return ERROR_CODES[error_name]['dscp']
@@ -434,7 +434,7 @@ class IndexHandler(BaseHandler):
         path = "/static/image/nothing.png"
         if self.current_user.pair:
             image = Image.get4db(db.images.find_one({
-                "author": self.current_user.get("pair"),
+                "author": self.current_user["pair"],
                 "date_index": datetime.datetime.now().strftime("%Y-%m-%d"),
             }))
             if image:
@@ -484,7 +484,7 @@ class EditerHandler(BaseHandler):
         dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
         self.image = Image.new(
             author = DBRef("users", self.current_user._id),
-            layout = self.current_user.get("layout"),
+            layout = self.current_user["layout"],
             date = dealed_date,
             says = self.current_user.says,
             text = text,
@@ -506,10 +506,6 @@ class EditerHandler(BaseHandler):
 
 class SettingHandler(BaseHandler):
     def get(self):
-        self.add_render('custom_js', ['js/zabuto_calendar.min.js', 'js/editer.js'])
-        self.add_render('custom_css', ['css/zabuto_calendar.min.css'])
-        
-        self.add_render('events', [])
-        
+        self.add_render('layout_options', LAYOUT_OPTIONS)
         self.add_render('title', '设置')
-        self.put_render("editer.html")
+        self.put_render("setting.html")

@@ -14,7 +14,7 @@ db = MongoClient().autoclave
 from autoclave.config import *
 import autoclave.image_generator as imgnt
 import autoclave.handlers as handlers
-
+import autoclave.datas_sync as datas_sync
 
 
 says_dict = {

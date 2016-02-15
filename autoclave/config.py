@@ -1,3 +1,5 @@
+import os.path
+
 SITE_TITLE = "为燕权设计的鸡汤高压釜"
 
 EXPIRED_TIME = 30 * 24 * 60 * 60
@@ -59,4 +61,3 @@ ERROR_CODES = {
     
     "generate_unconfirmed": {"code": 1200, "dscp": "您还没有进行有效设置，无法生成图片。<a href=\"/Setting\">点击这里</a>进行设置。"},
 }
-

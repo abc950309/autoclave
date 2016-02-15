@@ -31,8 +31,7 @@ $(document).ready(function () {
             var submit_str = "生成";
         }
         
-        $("#cal-editer-form").html("<form action=\"/Editer\" method=\"post\"><p><div class=\"form-group\"><label for=\"img-text\">文本内容</label><input name=\"text\" type=\"text\" class=\"form-control\" id=\"img-text\" placeholder=\"您希望出现在图片中的文字\" " + ( hasEvent ? ("value=\"" + myDate.data('values').text + "\"") : "" ) + " /></div></p><input type=\"hidden\" name=\"date\" value=\"" + date + "\" /><p><a date-has-image=\"" + hasEvent + "\" id=\"cal-editer-submit\" class=\"btn btn-default\">" + submit_str + "</a></p><p class=\"failure\"></p></form>");
-        
+        $("#cal-editer-form").html("<form  class=\"form-horizontal\" action=\"/Editer\" method=\"post\"><div class=\"form-group\"><label class=\"col-sm-2 control-label\" for=\"img-text\">文本内容</label><div class=\"col-sm-10\"><input name=\"text\" type=\"text\" class=\"form-control\" id=\"img-text\" placeholder=\"您希望出现在图片中的文字\" " + ( hasEvent ? ("value=\"" + myDate.data('values').text + "\"") : "" ) + " /></div></div><input type=\"hidden\" name=\"date\" value=\"" + date + "\" /><div class=\"form-group\"><div class=\"col-sm-offset-2 col-sm-10\"><a date-has-image=\"" + hasEvent + "\" id=\"cal-editer-submit\" class=\"btn btn-default\">" + submit_str + "</a></div></div><div class=\"form-group\"><div class=\"col-sm-offset-2 col-sm-10\"><p class=\"failure\"></p></div></div></form>");
         
         $("#cal-editer-date").html(date);
         $("#cal-editer").show();

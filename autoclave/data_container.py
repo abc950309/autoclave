@@ -41,6 +41,9 @@ def generate_base_data_class( setting ):
         def get(self, key):
             return self._data[key] if key in self._data else None
         
+        def __getitem__(self, key):
+            return self.get(key)
+        
         def __getattribute__(self, key):
             if key in direct_list:
                 return self._data[key] if key in self._data else None
