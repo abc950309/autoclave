@@ -209,6 +209,9 @@ class BaseHandler(tornado.web.RequestHandler):
         self.session = None
         self.render_data = {}
         
+        self.add_css("mine")
+        self.add_js("mine")
+        
         self.get_session()
         self.ajax_checker()
         self.mobile_checker()
