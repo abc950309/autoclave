@@ -57,7 +57,7 @@ def generate_base_data_class( setting ):
             if key in dbref_list:
                 if key in self._dbref_data:
                     return self._dbref_data[key]
-                if key in self._data:
+                if key in self._data and self._data[key]:
                     self._dbref_data[key] = dbref_cell(db.dereference(self._data[key]))
                     return self._dbref_data[key]
                 return None
@@ -65,7 +65,7 @@ def generate_base_data_class( setting ):
             if key in multidbref_list:
                 if key in self._dbref_data:
                     return self._dbref_data[key]
-                if key in self._data:
+                if key in self._data and self._data[key]:
                     self._dbref_data[key] = [dbref_cell(db.dereference(x)) for x in self._data[key]]
                     return self._dbref_data[key]
                 return None

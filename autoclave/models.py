@@ -15,13 +15,22 @@ class User(data_container.generate_base_data_class(USER_DATA_CONF)):
     
     global caches
     
-    def __init__(self, uid, fresh = False):
-        if (uid not in caches['users']) or fresh:
-            user = caches['users'][uid] = db.users.find_one({"_id": uid})
-        else:
-            user = caches['users'][uid]
-        self.build(user)
+    @staticmethod
+    def get4id(uid, fresh = False):
+        if not uid:
+            return None
         
+        if uid not in caches['users'] or fresh:
+            user = db.users.find_one({"_id": uid})
+            if not user:
+                return None
+            caches['users'][uid] = User(user)
+        
+        return caches['users'][uid]
+
+
+    def __init__(self, user):
+        self.build(user)
         self.access_time = time.time()
 
 class Session(data_container.generate_base_data_class(SESSION_DATA_CONF)):

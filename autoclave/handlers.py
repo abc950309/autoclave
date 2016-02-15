@@ -89,6 +89,8 @@ def get_arg_by_list(needed = None, optional = None):
 clear_users_caches = data_container.generate_caches_clear_func('users')
 clear_sessions_caches = data_container.generate_caches_clear_func('sessions')
 
+new_pair_code = lambda x : models.PairCode.new(DBRef("users", x))
+
 def get_error_string(error_name):
     return ERROR_CODES[error_name]['dscp']
 
@@ -139,8 +141,11 @@ class BaseHandler(tornado.web.RequestHandler):
         return session_id
 
 
-    def fresh_current_user(self):
-        self._current_user = self.get_current_user(fresh = True)
+    def fresh_current_user(self, uid = None):
+        if uid and uid != 0:
+            models.User.get4id(uid, fresh = True)
+        else:
+            self._current_user = self.get_current_user(fresh = True)
 
 
     def fresh_session(self):
@@ -225,9 +230,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
 
     def get_current_user(self, fresh = False):
-        if self.session.uid != 0:
-            return models.User(self.session.uid, fresh)
-        return None
+        return models.User.get4id(self.session.uid, fresh)
 
 
     @tornado.web.authenticated
@@ -375,7 +378,7 @@ class LoginAndRegisterHandler(BaseHandler):
 
     def on_finish_c(self):
         if hasattr(self, "path") and self.path == "Register":
-            models.PairCode.new(DBRef("users", self.current_user._id))
+            new_pair_code(self.current_user._id)
 
 class IndexHandler(BaseHandler):
     def get(self):
@@ -471,7 +474,7 @@ class SettingHandler(BaseHandler):
         self.add_render(
             'pair_code',
             models.PairCode.get4db(
-                db.images.find_one({ "code": DBRef("users", self.current_user._id) })
+                db.pair_codes.find_one({ "pair_to": DBRef("users", self.current_user._id) })
             )
         )
         self.add_render('layout_options', db.layouts.find({}, {"_id": True, "name": True, "display": True}).sort("name"))
@@ -511,11 +514,11 @@ class SettingHandler(BaseHandler):
             if self.current_user.pair:
                 self.error_write("setting_double_pair")
                 return
-            self.dealed_pair_code = models.PairCode.get4db(db.images.find_one({ "code": pair_code }))
+            self.dealed_pair_code = models.PairCode.get4db(db.pair_codes.find_one({ "code": pair_code }))
             if not self.dealed_pair_code:
                 self.error_write("setting_bad_pair")
                 return
-            self.set_dict["pair"] = self.dealed_pair_code["to_pair"]
+            self.set_dict["pair"] = self.dealed_pair_code["pair_to"]
         
         if len(self.set_dict) == 0:
             self.error_write("setting_arg_missing")
@@ -536,8 +539,35 @@ class SettingHandler(BaseHandler):
             })
         else:
             self.redirect(self.request.uri)
-
-
+    
+    def delete(self, path = None):
+        if path == "Pair":
+            self._delete_path_pair()
+        else:
+            raise tornado.web.HTTPError(400)
+    
+    def _delete_path_pair(self):
+        users_list = [ self.current_user._id, self.current_user.pair._id ]
+        db.users.update_many(
+            {"_id": { "$in": users_list }},
+            {
+                "$unset": {"pair": True},
+                "$currentDate": {"lastModified": True},
+            }
+        )
+        
+        for line in users_list:
+            new_pair_code(line)
+        self.fresh_current_user()
+        self.fresh_current_user(users_list[1])
+        
+        if self.ajax_flag:
+            self.write({
+                "status": 0,
+            })
+        else:
+            self.redirect("/Setting")
+        
     def on_finish_c(self):
         if hasattr(self, "result") and self.result:
             if 'password' in self.set_dict:
@@ -545,7 +575,15 @@ class SettingHandler(BaseHandler):
                 self.fresh_current_user()
             
             if hasattr(self, "dealed_pair_code"):
+                db.users.update_one(
+                    {"_id": self.dealed_pair_code.pair_to._id},
+                    {
+                        "$set": {"pair": DBRef("users", self.current_user._id)},
+                        "$currentDate": {"lastModified": True}
+                    }
+                )
                 self.dealed_pair_code.destroy()
+                self.fresh_current_user(self.dealed_pair_code.pair_to._id)
             
             if not self.current_user.confirmed and self.current_user.layout and self.current_user.says:
                 result = db.users.update_one(

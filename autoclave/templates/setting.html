@@ -8,13 +8,13 @@
   <div class="form-group">
     <label name="password" for="password" class="col-sm-2 control-label">更改密码</label>
     <div class="col-sm-10">
-      <input type="password" class="form-control" name="password" id="password" placeholder="更改密码">
+      <input type="password" class="form-control" name="password" id="password" placeholder="更改密码" />
     </div>
   </div>
   <div class="form-group">
     <label name="confirm_password" for="confirm_password" class="col-sm-2 control-label">确认密码</label>
     <div class="col-sm-10">
-      <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="确认密码">
+      <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="确认密码" />
     </div>
   </div>
   <div class="form-group">
@@ -30,14 +30,24 @@
   <div class="form-group">
     <label name="says" for="says" class="col-sm-2 control-label">引述标示</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" name="says" id="says" placeholder="引述标示，请尽量使用英文"{% if current_user.says %} value="{{ current_user.says }}"{% end %}>
+      <input type="text" class="form-control" name="says" id="says" placeholder="引述标示，请尽量使用英文"{% if current_user.says %} value="{{ current_user.says }}"{% end %} />
     </div>
   </div>
   <div class="form-group">
-    <label name="pair_code" for="pair_code" class="col-sm-2 control-label">配对代码</label>
+    <label name="pair_code" for="pair_code" class="col-sm-2 control-label">配对</label>
     <div class="col-sm-10">
-      {% if pair_code %}<p>您的配对代买是 {{ pair_code.code }}</p>{% end %}
-      <input type="text" class="form-control" name="pair_code" id="pair_code" placeholder="配对代码"{% if current_user.says %} value="{{ current_user.says }}"{% end %}>
+      {% if current_user.pair %}
+      <div class="form-control-static inline-block">您目前的配对是 {{ current_user.pair.name }} ( {{ current_user.pair.account }} ) </div>
+      <a href="#" id="release-pair" class="btn btn-warning">释放</a>
+      {% else %}
+      {% if pair_code %}<p class="form-control-static">您的配对代码是 {{ pair_code.code }}</p>{% end %}
+      <input type="text" class="form-control" name="pair_code" id="pair_code" placeholder="配对代码" />
+      {% end %}
+    </div>
+  </div>
+  <div class="form-group failure" style="display: none;">
+    <div class="col-sm-offset-2 col-sm-10">
+      <p class="failure"></p>
     </div>
   </div>
   <div class="form-group">

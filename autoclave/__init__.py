@@ -26,6 +26,7 @@ def start_server(debug = DEBUG, listen_port = LISTEN_PORT):
             (r"/LoginAndRegister/(\w+)", handlers.LoginAndRegisterHandler),
             (r"/Editer", handlers.EditerHandler),
             (r"/Setting", handlers.SettingHandler),
+            (r"/Setting/(\w+)", handlers.SettingHandler),
         ],
         template_path = os.path.join(os.path.dirname(__file__), "templates"),
         static_path = os.path.join(os.path.dirname(__file__), "static"),
