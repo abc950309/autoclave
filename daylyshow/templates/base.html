@@ -1,0 +1,57 @@
+<html lang="zh-CN">
+<head>
+<title>{{title}} - {% if current_user %}{{ current_user.name }} - {% end %}{{site_title}}</title>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<link href="//cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+<link href="//cdn.bootcss.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+<link href="{{ static_url('css/mine.css') }}" rel="stylesheet">
+{% if 'custom_css' in __keys__ %}{% for line in custom_css %}<link href="{{ static_url(line) }}" rel="stylesheet">{% end %}{% end %}
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">{{site_title}}</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        {% for line in navbar_list %}
+            <li{% if class_name == line['class_name'] %} class="active"{% end %}>
+                <a href="{% raw line['path'] %}">{{ line['dscp'] }}{% if class_name == line['class_name'] %} <span class="sr-only">(current)</span>{% end %}</a>
+            </li>
+        {% end %}
+        <li{% if class_name == 'LoginAndRegisterHandler' %} class="active"{% end %}><a href="/LoginAndRegister{% if current_user %}/Logout{% end %}">{% if current_user %}{{ current_user.name }} - 登出{% else %}注册与登录{% end %}{% if class_name == 'LoginAndRegisterHandler' %} <span class="sr-only">(current)</span>{% end %}</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container">
+    <div class="row main-page-base">
+        {% if class_name != 'LoginAndRegisterHandler' %}
+        <div class="main-title">
+            {% block main_title %}
+            <i class="fa fa-list"></i> {{ title }}
+            <div class="pull-right"><a href="/download"><i class="fa fa-download"></i> 下载图片</a> | <a href="/editer"><i class="fa fa-pencil-square"></i> 编辑日历</a></div>
+            {% end %}
+        </div>
+        {% end %}
+        {% block content %}{% end %}
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="//cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+<script type="text/javascript" src="//cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="{{static_url('js/mine.js')}}"></script>
+{% if 'custom_js' in __keys__ %}{% for line in custom_js %}<script type="text/javascript" src="{{static_url(line)}}"></script>
+{% end %}{% end %}
+</html>
