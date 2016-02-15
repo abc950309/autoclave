@@ -487,7 +487,16 @@ class EditerHandler(BaseHandler):
         if not self.current_user.confirmed:
             self.error_write("generate_unconfirmed")
             return
+        
         dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+        
+        image = Image.get4db(db.images.find_one({
+            "author": DBRef("users", self.current_user._id),
+            "date_index": dealed_date.strftime("%Y-%m-%d"),
+        }))
+        if image:
+            image.destroy()
+        
         self.image = Image.new(
             author = DBRef("users", self.current_user._id),
             layout = self.current_user["layout"],
