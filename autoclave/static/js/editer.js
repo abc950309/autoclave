@@ -55,7 +55,6 @@ $(document).ready(function () {
     $("#hide-cal-editer").click(clear_up_cal_editer);
     $("body").on('click', '#cal-editer-submit', function(event){
         form = $("form");
-        console.log(build_ajax_data(form.serializeArray()))
         $.ajax({
             method: "POST",
             url: "/Editer",
