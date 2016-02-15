@@ -23,7 +23,7 @@ $( document ).ready(function() {
             button.html('<i class="fa fa-spinner fa-spin"></i> 登陆中');
         }
         
-        var post_data = jQuery.param(build_ajax_data(form.serializeArray()));
+        var post_data = build_ajax_data(form.serializeArray());
         console.log(post_data);
         $.ajax({
             url: form.attr('action'),

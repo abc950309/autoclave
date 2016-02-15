@@ -64,7 +64,7 @@ class ImageGenerator:
 
     def __init__(
         self,
-        setting = None,
+        layout = None,
         template = None,
         width = None,
         height = None,
@@ -96,60 +96,60 @@ class ImageGenerator:
         
         for line in init_param_list:
             if locals()[line]:
-                setting[line] = locals()[line]
-            if line not in setting or not setting[line]:
-                setting[line] = init_param_default[line]
+                layout[line] = locals()[line]
+            if line not in layout or not layout[line]:
+                layout[line] = init_param_default[line]
 
-        if setting['template']:
-            self.image = Image.open(setting['template'])
+        if layout['template']:
+            self.image = Image.open(layout['template'])
             self.width, self.height = self.image.size
         else:
-            self.image = Image.new("RGB", (setting['width'], setting['height']), color = setting['fill'])
-            self.width, self.height = setting['width'], setting['height']
+            self.image = Image.new("RGB", (layout['width'], layout['height']), color = layout['fill'])
+            self.width, self.height = layout['width'], layout['height']
         
-        self.line_h = setting['line_h']
+        self.line_h = layout['line_h']
 
-        self.text_color = setting['text_color']
+        self.text_color = layout['text_color']
         
-        if setting['used_width']:
-            self.used_width = setting['used_width']
+        if layout['used_width']:
+            self.used_width = layout['used_width']
         else:
             self.used_width = self.width
         
-        self.text_mid = setting['text_mid']
-        self.date_margin = setting['date_margin']
-        if not setting['date_color']:
-            setting['date_color'] = setting['text_color']
-        self.date_color = setting['date_color']
+        self.text_mid = layout['text_mid']
+        self.date_margin = layout['date_margin']
+        if not layout['date_color']:
+            layout['date_color'] = layout['text_color']
+        self.date_color = layout['date_color']
 
-        if not setting['line_color']:
-            setting['line_color'] = setting['date_color']
-        self.line_color = setting['line_color']
-        self.line_width = setting['line_width']
+        if not layout['line_color']:
+            layout['line_color'] = layout['date_color']
+        self.line_color = layout['line_color']
+        self.line_width = layout['line_width']
         
-        self.qmark_margin = setting['qmark_margin']
-        self.qmark_top_shift = setting['qmark_top_shift']
-        self.qmark_bottom_shift = setting['qmark_bottom_shift']
-        if not setting['qmark_color']:
-            setting['qmark_color'] = setting['line_color']
-        self.qmark_color = setting['qmark_color']
+        self.qmark_margin = layout['qmark_margin']
+        self.qmark_top_shift = layout['qmark_top_shift']
+        self.qmark_bottom_shift = layout['qmark_bottom_shift']
+        if not layout['qmark_color']:
+            layout['qmark_color'] = layout['line_color']
+        self.qmark_color = layout['qmark_color']
 
         self.wrap_width = self.used_width - 140
         self.margin = (self.used_width * 1.02 - self.wrap_width) / 2
         
-        if not setting['text_font']:
-            setting['text_font'] = os.path.join(os.path.dirname(__file__), "font", "font.ttf")
-        if not setting['date_font']:
-            setting['date_font'] = os.path.join(os.path.dirname(__file__), "font", "date.ttf")
-        if not setting['qmark_font']:
-            setting['qmark_font'] = os.path.join(os.path.dirname(__file__), "font", "qmark.ttf")
-        if not setting['says_font']:
-            setting['says_font'] = os.path.join(os.path.dirname(__file__), "font", "says.otf")
+        if not layout['text_font']:
+            layout['text_font'] = os.path.join(os.path.dirname(__file__), "font", "font.ttf")
+        if not layout['date_font']:
+            layout['date_font'] = os.path.join(os.path.dirname(__file__), "font", "date.ttf")
+        if not layout['qmark_font']:
+            layout['qmark_font'] = os.path.join(os.path.dirname(__file__), "font", "qmark.ttf")
+        if not layout['says_font']:
+            layout['says_font'] = os.path.join(os.path.dirname(__file__), "font", "says.otf")
                 
-        self.text_font = ImageFont.truetype(setting['text_font'], setting['text_size'])
-        self.date_font = ImageFont.truetype(setting['date_font'], setting['date_size'])
-        self.qmark_font = ImageFont.truetype(setting['qmark_font'], setting['qmark_size'])
-        self.says_font = ImageFont.truetype(setting['says_font'], setting['date_size'])
+        self.text_font = ImageFont.truetype(layout['text_font'], layout['text_size'])
+        self.date_font = ImageFont.truetype(layout['date_font'], layout['date_size'])
+        self.qmark_font = ImageFont.truetype(layout['qmark_font'], layout['qmark_size'])
+        self.says_font = ImageFont.truetype(layout['says_font'], layout['date_size'])
 
     def text_wraper(self, text, font, width):
         start = end = 0
@@ -199,9 +199,14 @@ class ImageGenerator:
     def get_image():
         return self.image
     
-    def generate2save(self, text, says, date = None):
+    def generate2save(self, text, says, date = None, file_path = None):
         if not date:
             date = datetime.datetime.now()
         self.generate(text, says, date)
-        name = date.strftime("%Y-%m-%d")
-        self.image.save(os.path.join(os.path.dirname(__file__), "static", "output", (says.lower().replace(' ', '-') + '-' + name + ".png")), "PNG")
+        
+        if not file_path:
+            name = date.strftime("%Y-%m-%d")
+            file_path = os.path.join(os.path.dirname(__file__), "static", "output", (says.lower().replace(' ', '-') + '-' + name + ".png"))
+        
+        self.image.save(file_path, "PNG")\
+

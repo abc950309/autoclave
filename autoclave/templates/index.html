@@ -3,9 +3,5 @@
 {% block main_title %}<i class="fa fa-list"></i> {{ title }}<div class="pull-right"><a href="/Download"><i class="fa fa-download"></i> 下载图片</a> | <a href="/Editer"><i class="fa fa-pencil-square"></i> 编辑日历</a></div>{% end %}
 
 {% block content %}
-<div id="my-calendar"></div>
-<script type="text/javascript">
-    var eventData = {{ json_encode(events) }};
-</script>
+<img class="img-responsive img-thumbnail" src="{{path}}" alt="今日图片" />
 {% end %}
-

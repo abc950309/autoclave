@@ -2,6 +2,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.autoreload
 
+import os
 import os.path
 import datetime
 import json
@@ -11,12 +12,12 @@ import re
 
 from bson.dbref import DBRef
 
-from daylyshow.config import *
-import daylyshow.image_generator as imgnt
-import daylyshow.datas as datas
-from daylyshow.password_tools import encrypt_password, verify_password
+from autoclave.config import *
+import autoclave.image_generator as image_generator
+import autoclave.datas as datas
+from autoclave.password_tools import encrypt_password, verify_password
 
-from daylyshow import db
+from autoclave import db
 
 caches = {
     "counter": 0,
@@ -87,10 +88,10 @@ def get_arg_by_list(needed = None, optional = None):
 class User(datas.generate_base_data_class(USER_DATA_CONF)):
     
     global caches
-        
+    
     def __init__(self, uid, fresh = False):
         if (uid not in caches['users']) or fresh:
-            user = caches['users'][uid] = db["users"].find_one({"_id": uid})
+            user = caches['users'][uid] = db.users.find_one({"_id": uid})
         else:
             user = caches['users'][uid]
         self.build(user)
@@ -99,11 +100,46 @@ class User(datas.generate_base_data_class(USER_DATA_CONF)):
 
 class Session(datas.generate_base_data_class(SESSION_DATA_CONF)):
     
-    global caches
-        
     def __init__(self, session):
         self.build(session)
         self.access_time = time.time()
+
+class Image(datas.generate_base_data_class(IMAGE_DATA_CONF)):
+    
+    @staticmethod
+    def new(author, layout, date, says, text):
+        id = str(uuid.uuid4().hex)
+        db.images.insert(
+            {
+                "_id": id,
+                "author": author,
+                "says": says,
+                "date": date,
+                "date_index": date.strftime("%Y-%m-%d"),
+                "text": text,
+                "layout": layout,
+                "path": "/static/output/" + id + ".png",
+                "file_path": os.path.join(
+                    os.path.dirname(__file__), "static", "output", id + ".png"
+                ),
+            }
+        )
+        return Image(db.images.find_one({"_id": id}))
+    
+    def __init__(self, data):
+        self.build(data)
+    
+    def destroy(self):
+        os.remove(self.file_path)
+        db.images.remove({ "_id": self._id })
+    
+    def generate(self):        
+        image_generator.ImageGenerator(layout = self.layout).generate2save(
+            text = self.text,
+            says = self.says,
+            date = self.date,
+            file_path = self.file_path,
+        )
 
 clear_users_caches = datas.generate_caches_clear_func('users')
 clear_sessions_caches = datas.generate_caches_clear_func('sessions')
@@ -131,7 +167,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def new_session(self):
         session_id = str(uuid.uuid4().hex)
         creation = int(time.time())
-        db["sessions"].insert(
+        db.sessions.insert(
             {
                 "_id": session_id,
                 "uid": 0,
@@ -146,7 +182,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self._current_user = self.get_current_user(fresh = True)
 
     def fresh_session(self):
-        session = db["sessions"].find_one({"_id": self.session_id})
+        session = db.sessions.find_one({"_id": self.session_id})
         
         if not session:
             self.session_id = self.new_session()
@@ -155,7 +191,7 @@ class BaseHandler(tornado.web.RequestHandler):
             self.session = caches['sessions'][self.session_id] = Session(session)
         
     def change_session(self, list):
-        db["sessions"].update_one(
+        db.sessions.update_one(
             {"_id": self.session_id},
             {
                 "$set": list,
@@ -237,7 +273,8 @@ class BaseHandler(tornado.web.RequestHandler):
         
         if hasattr(self, '_current_user') and getattr(self, '_current_user'):
             self.current_user.access_time = time.time()
-        self.session.access_time = time.time()
+        if hasattr(self, 'session') and getattr(self, 'session'):
+            self.session.access_time = time.time()
         caches['counter'] += 1
         
         if caches['counter'] >= CACHES_COUNTER_LIMIT:
@@ -264,6 +301,8 @@ class BaseHandler(tornado.web.RequestHandler):
 class LoginAndRegisterHandler(BaseHandler):
     
     def get(self, path = None):
+        if path == "Logout":
+            self._get_path_logout()
         next = self.get_argument('next', '/')
         if self.current_user:
             self.redirect(next)
@@ -288,12 +327,20 @@ class LoginAndRegisterHandler(BaseHandler):
             raise tornado.web.HTTPError(400)
             self.finish()
     
+    def _get_path_logout(self):
+        self.change_session({"uid": 0})
+        self.fresh_current_user()
+        self.redirect(self.get_login_url())
+        self.finish()
+    
     def _post_path_login_verif(self):
         self.finish()
     
     @get_arg_by_list(["account", "password"])
     def _post_path_login(self, account, password):
-        user = db["users"].find_one({"account": account})
+        if self.current_user:
+            return
+        user = db.users.find_one({"account": account})
         if not user:
             self.error_write("login_no_account")
         if not verify_password(password, user['password']):
@@ -329,7 +376,7 @@ class LoginAndRegisterHandler(BaseHandler):
             self.error_write("register_same_email")
         
         id = str(uuid.uuid4().hex)
-        result = db["users"].insert(
+        result = db.users.insert(
             {
                 "_id": id,
                 "name": name,
@@ -354,16 +401,59 @@ class LoginAndRegisterHandler(BaseHandler):
 
 class IndexHandler(BaseHandler):
     def get(self):
+        
+        path = "/static/image/nothing.png"
+        if self.current_user.pair:
+            image = Image(db.images.find_one({"author": self.current_user.get("pair")}))
+            if image:
+                path = image.path
+        
+        self.add_render('path', path)
+        
         self.add_render('title', '今日图片')
         self.put_render("index.html")
 
 
 class EditerHandler(BaseHandler):
     def get(self):
+        self.add_render('custom_js', ['js/zabuto_calendar.js', 'js/editer.js'])
+        self.add_render('custom_css', ['css/zabuto_calendar.min.css'])
+        self.xsrf_token
+        
+        self.add_render('events', [{"date": "2016-02-20", "values": {"path": "/static/image/nothing.png", "text": "这是一个测试"}}])
+        
+        self.add_render('title', '编辑日历')
+        self.put_render("editer.html")
+    
+    @get_arg_by_list(["text", "date"])
+    def post(self, text, date):
+        dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+        self.image = Image.new(
+            author = DBRef("users", self.current_user._id),
+            layout = self.current_user.get("layout"),
+            date = dealed_date,
+            says = self.current_user.says,
+            text = text,
+        )
+        self.write({
+            "date": self.image.date_index,
+            "values": {
+                "path": self.image.path,
+                "text": text,
+            },
+            "status": 0,
+        })
+    def on_finish_c(self):
+        if hasattr(self, "image"):
+            self.image.generate()
+
+
+class SettingHandler(BaseHandler):
+    def get(self):
         self.add_render('custom_js', ['js/zabuto_calendar.min.js', 'js/editer.js'])
         self.add_render('custom_css', ['css/zabuto_calendar.min.css'])
         
         self.add_render('events', [])
         
-        self.add_render('title', '编辑日历')
+        self.add_render('title', '设置')
         self.put_render("editer.html")

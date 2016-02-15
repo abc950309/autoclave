@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block main_title %}<i class="fa fa-list"></i> {{ title }}{% end %}
+
+{% block content %}
+<div id="my-calendar"></div>
+<div id="cal-editer" style="display: none;">
+    <div class="main-title row">
+        <div class="col-sm-12">
+            <i class="fa fa-pencil-square"></i> 编辑器 - <span id="cal-editer-date"></span>
+            <div class="pull-right"><a id="hide-cal-editer" href="#">收起</a></div>
+        </div>
+    </div>
+    <div id="cal-editer-display" style="display: none;"></div>
+    <div id="cal-editer-form"></div>
+</div>
+<script type="text/javascript">
+    var eventData = {% raw json_encode(events) %};
+</script>
+{% end %}
+

@@ -11,6 +11,7 @@ CACHES_NUMBER_LIMIT  = 10000
 NAVBAR_LIST = [
     {"class_name": "IndexHandler", "path": "/", "dscp": "首页"},
     {"class_name": "EditerHandler", "path": "/Editer", "dscp": "编辑"},
+    {"class_name": "SettingHandler", "path": "/Setting", "dscp": "设置"},
 ]
 
 USER_DATA_CONF = {
@@ -21,7 +22,7 @@ USER_DATA_CONF = {
     "name" : "Direct",
     "lastModified" : "Direct",
     "says" : "Direct",
-    "setting" : "DBRef",
+    "layout" : "DBRef",
     "confirmed": "Direct",
 }
 
@@ -30,6 +31,19 @@ SESSION_DATA_CONF = {
     "uid": "Direct",
     "creation": "Direct",
     "expired": "Direct",
+    "lastModified" : "Direct",
+}
+
+IMAGE_DATA_CONF = {
+    "_id": "Direct",
+    "author": "DBRef",
+    "file_path": "Direct",
+    "path": "Direct",
+    "says": "Direct",
+    "date": "Direct",
+    "date_index": "Direct",
+    "text": "Direct",
+    "layout": "DBRef",
     "lastModified" : "Direct",
 }
 

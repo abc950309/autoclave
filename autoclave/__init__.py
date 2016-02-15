@@ -9,11 +9,11 @@ import json
 from pymongo import MongoClient
 from bson.dbref import DBRef
 
-db = MongoClient().daylyshow
+db = MongoClient().autoclave
 
-from daylyshow.config import *
-import daylyshow.image_generator as imgnt
-import daylyshow.handlers as handlers
+from autoclave.config import *
+import autoclave.image_generator as imgnt
+import autoclave.handlers as handlers
 
 
 
@@ -135,7 +135,7 @@ def start_server(debug = DEBUG, listen_port = LISTEN_PORT):
             (r"/LoginAndRegister/(\w+)", handlers.LoginAndRegisterHandler),
             #(r"/(tilimer|samuel)/download", DownloadHandler),
             (r"/Editer", handlers.EditerHandler),
-            #(r"/(tilimer|samuel)/edit", EditHandler),
+            (r"/Setting", handlers.SettingHandler),
         ],
         template_path = os.path.join(os.path.dirname(__file__), "templates"),
         static_path = os.path.join(os.path.dirname(__file__), "static"),
