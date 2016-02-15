@@ -48,6 +48,9 @@ def generate_base_data_class( setting ):
             return self.get(key)
         
         def __getattribute__(self, key):
+            if key == "_data":
+                return object.__getattribute__(self, "_data")
+            
             if key in direct_list:
                 return self._data[key] if key in self._data else None
             

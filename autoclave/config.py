@@ -49,6 +49,13 @@ IMAGE_DATA_CONF = {
     "lastModified" : "Direct",
 }
 
+PAIR_CODE_DATA_CONF = {
+    "_id": "Direct",
+    "code": "Direct",
+    "pair_to": "DBRef",
+    "lastModified" : "Direct",
+}
+
 ERROR_CODES = {
     "register_needed_arg_missing": {"code": 1000, "dscp": "请您输入有效的姓名。"},
     "register_email_format_wrong": {"code": 1001, "dscp": "请您输入有效的 E-Mail。"},
@@ -65,4 +72,6 @@ ERROR_CODES = {
     "setting_confirm_password_wrong": {"code": 1501, "dscp": "您输入的确认密码与密码不匹配。"},
     "setting_password_format_wrong": {"code": 1502, "dscp": "请您输入有效的密码，需要至少8位、包含字母和数字的密码。"},
     "setting_no_layout": {"code": 1503, "dscp": "您请求的布局不存在。"},
+    "setting_double_pair": {"code": 1504, "dscp": "您已经进行了配对。"},
+    "setting_bad_pair": {"code": 1505, "dscp": "您输入的配对代码不正确。"},
 }

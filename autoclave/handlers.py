@@ -12,18 +12,19 @@ import re
 
 from bson.dbref import DBRef
 
-from autoclave.config import *
-import autoclave.image_generator as image_generator
-import autoclave.data_container as data_container
-from autoclave.password_tools import encrypt_password, verify_password
-
-from autoclave import db
-
 caches = {
     "counter": 0,
     "sessions": {},
     "users": {},
 }
+
+from autoclave.config import *
+import autoclave.image_generator as image_generator
+import autoclave.data_container as data_container
+import autoclave.models as models
+from autoclave.password_tools import encrypt_password, verify_password
+
+from autoclave import db
 
 check_email_addr = lambda x: (re.match( r"[^@]+@[^@]+\.[^@]+", x) != None)
 
@@ -85,68 +86,6 @@ def get_arg_by_list(needed = None, optional = None):
     return _deco
 
 
-class User(data_container.generate_base_data_class(USER_DATA_CONF)):
-    
-    global caches
-    
-    def __init__(self, uid, fresh = False):
-        if (uid not in caches['users']) or fresh:
-            user = caches['users'][uid] = db.users.find_one({"_id": uid})
-        else:
-            user = caches['users'][uid]
-        self.build(user)
-        
-        self.access_time = time.time()
-
-class Session(data_container.generate_base_data_class(SESSION_DATA_CONF)):
-    
-    def __init__(self, session):
-        self.build(session)
-        self.access_time = time.time()
-
-class Image(data_container.generate_base_data_class(IMAGE_DATA_CONF)):
-    
-    @staticmethod
-    def get4db(data):
-        if data:
-            return Image(data)
-        return None
-    
-    @staticmethod
-    def new(author, layout, date, says, text):
-        id = str(uuid.uuid4().hex)
-        db.images.insert(
-            {
-                "_id": id,
-                "author": author,
-                "says": says,
-                "date": date,
-                "date_index": date.strftime("%Y-%m-%d"),
-                "text": text,
-                "layout": layout,
-                "path": "/static/output/" + id + ".png",
-                "file_path": os.path.join(
-                    os.path.dirname(__file__), "static", "output", id + ".png"
-                ),
-            }
-        )
-        return Image(db.images.find_one({"_id": id}))
-    
-    def __init__(self, data):
-        self.build(data)
-    
-    def destroy(self):
-        os.remove(self.file_path)
-        db.images.remove({ "_id": self._id })
-    
-    def generate(self):        
-        image_generator.ImageGenerator(layout = self.layout.get_dict()).generate2save(
-            text = self.text,
-            says = self.says,
-            date = self.date,
-            file_path = self.file_path,
-        )
-
 clear_users_caches = data_container.generate_caches_clear_func('users')
 clear_sessions_caches = data_container.generate_caches_clear_func('sessions')
 
@@ -176,6 +115,7 @@ class BaseHandler(tornado.web.RequestHandler):
         'site_title': SITE_TITLE,
         'navbar_list': NAVBAR_LIST,
         'get_error_string': get_error_string,
+        'dereference': db.dereference,
     }
     
     
@@ -210,7 +150,7 @@ class BaseHandler(tornado.web.RequestHandler):
             self.session_id = self.new_session()
             self.fresh_session()
         else:
-            self.session = caches['sessions'][self.session_id] = Session(session)
+            self.session = caches['sessions'][self.session_id] = models.Session(session)
 
 
     def change_session(self, list):
@@ -286,7 +226,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def get_current_user(self, fresh = False):
         if self.session.uid != 0:
-            return User(self.session.uid, fresh)
+            return models.User(self.session.uid, fresh)
         return None
 
 
@@ -348,6 +288,7 @@ class LoginAndRegisterHandler(BaseHandler):
         self.put_render("login_and_register.html")
     
     def post(self, path = None):
+        self.path = path
         if path == "LoginVerif":
             self._post_path_login_verif()
         if path == "Login":
@@ -432,20 +373,23 @@ class LoginAndRegisterHandler(BaseHandler):
         
         self.finish()
 
+    def on_finish_c(self):
+        if hasattr(self, "path") and self.path == "Register":
+            models.PairCode.new(DBRef("users", self.current_user._id))
 
 class IndexHandler(BaseHandler):
     def get(self):
         
         path = "/static/image/nothing.png"
         if self.current_user.pair:
-            image = Image.get4db(db.images.find_one({
+            image = models.Image.get4db(db.images.find_one({
                 "author": self.current_user["pair"],
                 "date_index": datetime.datetime.now().strftime("%Y-%m-%d"),
             }))
             if image:
                 path = image.path
         else:
-            image = Image.get4db(db.images.find_one({
+            image = models.Image.get4db(db.images.find_one({
                 "author": DBRef("users", self.current_user._id),
                 "date_index": datetime.datetime.now().strftime("%Y-%m-%d"),
             }))
@@ -490,14 +434,14 @@ class EditerHandler(BaseHandler):
         
         dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
         
-        image = Image.get4db(db.images.find_one({
+        image = models.Image.get4db(db.images.find_one({
             "author": DBRef("users", self.current_user._id),
             "date_index": dealed_date.strftime("%Y-%m-%d"),
         }))
         if image:
             image.destroy()
         
-        self.image = Image.new(
+        self.image = models.Image.new(
             author = DBRef("users", self.current_user._id),
             layout = self.current_user["layout"],
             date = dealed_date,
@@ -520,14 +464,22 @@ class EditerHandler(BaseHandler):
 
 
 class SettingHandler(BaseHandler):
-    # $("#layout-display").html('<img class="thumbnail img-responsive" src="http://0yin.cn/static/upload/ef867cb1a7274515a810077b4d272cda.jpg" />').show()
+    
     def get(self):
-        self.add_render('layout_options', db.layouts.find({}, {"_id": True, "name": True}).sort("name"))
+        self.add_render('custom_js', ['js/setting.js'])
+        
+        self.add_render(
+            'pair_code',
+            models.PairCode.get4db(
+                db.images.find_one({ "code": DBRef("users", self.current_user._id) })
+            )
+        )
+        self.add_render('layout_options', db.layouts.find({}, {"_id": True, "name": True, "display": True}).sort("name"))
         self.add_render('title', '设置')
         self.put_render("setting.html")
     
-    @get_arg_by_list(optional = ["password", "confirm_password", "layout", "says"])
-    def post(self, password, confirm_password, layout, says):
+    @get_arg_by_list(optional = ["password", "confirm_password", "layout", "says", "pair_code"])
+    def post(self, password, confirm_password, layout, says, pair_code):
         for line in [password, layout, says]:
             if line:
                 break
@@ -555,11 +507,21 @@ class SettingHandler(BaseHandler):
         if says and (not self.current_user.says or says != self.current_user.says):
             self.set_dict["says"] = says
         
+        if pair_code:
+            if self.current_user.pair:
+                self.error_write("setting_double_pair")
+                return
+            self.dealed_pair_code = models.PairCode.get4db(db.images.find_one({ "code": pair_code }))
+            if not self.dealed_pair_code:
+                self.error_write("setting_bad_pair")
+                return
+            self.set_dict["pair"] = self.dealed_pair_code["to_pair"]
+        
         if len(self.set_dict) == 0:
             self.error_write("setting_arg_missing")
             return
         
-        result = db.users.update_one(
+        self.result = db.users.update_one(
             {"_id":self.current_user._id},
             {
                 "$set": self.set_dict,
@@ -577,10 +539,14 @@ class SettingHandler(BaseHandler):
 
 
     def on_finish_c(self):
-        if hasattr(self, "set_dict"):
+        if hasattr(self, "result") and self.result:
             if 'password' in self.set_dict:
                 self.change_session({"uid": 0})
                 self.fresh_current_user()
+            
+            if hasattr(self, "dealed_pair_code"):
+                self.dealed_pair_code.destroy()
+            
             if not self.current_user.confirmed and self.current_user.layout and self.current_user.says:
                 result = db.users.update_one(
                     {"_id":self.current_user._id},

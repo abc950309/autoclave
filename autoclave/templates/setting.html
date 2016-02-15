@@ -23,7 +23,7 @@
       <div class="row col-sm-6" id="layout-display" style="display: none;"></div>
       <select class="form-control" name="layout">
         <option></option>
-        {% for line in layout_options %}<option value="{{ line['_id'] }}"{% if current_user.layout and line['_id'] == current_user.layout._id %} selected{% end %} >{{ line['name'] }}</option>{% end %}
+        {% for line in layout_options %}<option data-display="{{ dereference(line['display'])['path'] }}" value="{{ line['_id'] }}"{% if current_user.layout and line['_id'] == current_user.layout._id %} selected{% end %} >{{ line['name'] }}</option>{% end %}
       </select>
     </div>
   </div>
@@ -31,6 +31,13 @@
     <label name="says" for="says" class="col-sm-2 control-label">引述标示</label>
     <div class="col-sm-10">
       <input type="text" class="form-control" name="says" id="says" placeholder="引述标示，请尽量使用英文"{% if current_user.says %} value="{{ current_user.says }}"{% end %}>
+    </div>
+  </div>
+  <div class="form-group">
+    <label name="pair_code" for="pair_code" class="col-sm-2 control-label">配对代码</label>
+    <div class="col-sm-10">
+      {% if pair_code %}<p>您的配对代买是 {{ pair_code.code }}</p>{% end %}
+      <input type="text" class="form-control" name="pair_code" id="pair_code" placeholder="配对代码"{% if current_user.says %} value="{{ current_user.says }}"{% end %}>
     </div>
   </div>
   <div class="form-group">
