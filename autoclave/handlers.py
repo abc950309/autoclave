@@ -271,7 +271,26 @@ class BaseHandler(tornado.web.RequestHandler):
                 "status": ERROR_CODES[error_name]['code'],
                 "dscp": ERROR_CODES[error_name]['dscp'],
             })
+    
+    def add_js(self, name):
+        if 'custom_js' not in self.render_data:
+            self.render_data['custom_js'] = []
+        
+        if self.settings.get('debug'):
+            self.render_data['custom_js'].append( "js/" + name + '.js' )
+            return
+        
+        return self.render_data['custom_js'].append( "js/" + name + '.min.js' )
 
+    def add_css(self, name):
+        if 'custom_css' not in self.render_data:
+            self.render_data['custom_css'] = []
+        
+        if self.settings.get('debug'):
+            self.render_data['custom_css'].append( "css/" + name + '.css' )
+            return
+        
+        return self.render_data['custom_css'].append( "css/" + name + '.min.css' )
 
 class LoginAndRegisterHandler(BaseHandler):
     
@@ -283,7 +302,7 @@ class LoginAndRegisterHandler(BaseHandler):
         if self.current_user:
             self.redirect(next)
         
-        self.add_render('custom_js', ['js/login.js'])
+        self.add_js("login")
         
         self.add_render('next', next)
         self.add_render('title', '注册与登录')
@@ -380,6 +399,7 @@ class LoginAndRegisterHandler(BaseHandler):
         if hasattr(self, "path") and self.path == "Register":
             new_pair_code(self.current_user._id)
 
+
 class IndexHandler(BaseHandler):
     def get(self):
         
@@ -406,8 +426,9 @@ class IndexHandler(BaseHandler):
 
 class EditerHandler(BaseHandler):
     def get(self):
-        self.add_render('custom_js', ['js/zabuto_calendar.js', 'js/editer.js'])
-        self.add_render('custom_css', ['css/zabuto_calendar.min.css'])
+        self.add_js("zabuto_calendar")
+        self.add_js("editer")
+        self.add_css("zabuto_calendar")
         self.xsrf_token
         
         images = db.images.find({
@@ -469,7 +490,7 @@ class EditerHandler(BaseHandler):
 class SettingHandler(BaseHandler):
     
     def get(self):
-        self.add_render('custom_js', ['js/setting.js'])
+        self.add_js("setting")
         
         self.add_render(
             'pair_code',
