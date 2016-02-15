@@ -1,5 +1,5 @@
 # Output Image
-[0-9a-f]{32}.png
+/autoclave/static/output/*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
