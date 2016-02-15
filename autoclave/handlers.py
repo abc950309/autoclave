@@ -75,8 +75,8 @@ def get_arg_by_list(needed = None, optional = None):
                         self.finish()
             if optional:
                 for line in optional:
-                    arguments[line] = self.get_argument('name', None)
-                    if len(arguments[line]) == 0:
+                    arguments[line] = self.get_argument(line, None)
+                    if arguments[line] and len(arguments[line]) == 0:
                         arguments[line] = None
             
             kwargs.update(arguments)
@@ -140,7 +140,7 @@ class Image(data_container.generate_base_data_class(IMAGE_DATA_CONF)):
         db.images.remove({ "_id": self._id })
     
     def generate(self):        
-        image_generator.ImageGenerator(layout = self.layout).generate2save(
+        image_generator.ImageGenerator(layout = self.layout.get_dict()).generate2save(
             text = self.text,
             says = self.says,
             date = self.date,
@@ -328,7 +328,6 @@ class BaseHandler(tornado.web.RequestHandler):
                 "status": ERROR_CODES[error_name]['code'],
                 "dscp": ERROR_CODES[error_name]['dscp'],
             })
-        self.finish()
 
 
 class LoginAndRegisterHandler(BaseHandler):
@@ -336,6 +335,7 @@ class LoginAndRegisterHandler(BaseHandler):
     def get(self, path = None):
         if path == "Logout":
             self._get_path_logout()
+            return
         next = self.get_argument('next', '/')
         if self.current_user:
             self.redirect(next)
@@ -364,7 +364,6 @@ class LoginAndRegisterHandler(BaseHandler):
         self.change_session({"uid": 0})
         self.fresh_current_user()
         self.redirect(self.get_login_url())
-        self.finish()
     
     def _post_path_login_verif(self):
         self.finish()
@@ -376,8 +375,10 @@ class LoginAndRegisterHandler(BaseHandler):
         user = db.users.find_one({"account": account})
         if not user:
             self.error_write("login_no_account")
+            return
         if not verify_password(password, user['password']):
             self.error_write("login_wrong_password")
+            return
         
         self.change_session({"uid": user["_id"]})
         self.fresh_current_user()
@@ -399,14 +400,18 @@ class LoginAndRegisterHandler(BaseHandler):
             return
         if not check_email_addr(account):
             self.error_write("register_email_format_wrong")
+            return
         if not password_check(password):
             self.error_write("register_password_format_wrong")
+            return
         if password != confirm_password:
             self.error_write("register_confirm_password_wrong")
+            return
         
         same_name_user = db.users.find_one({"account": account})
         if same_name_user:
             self.error_write("register_same_email")
+            return
         
         id = str(uuid.uuid4().hex)
         result = db.users.insert({
@@ -481,6 +486,7 @@ class EditerHandler(BaseHandler):
     def post(self, text, date):
         if not self.current_user.confirmed:
             self.error_write("generate_unconfirmed")
+            return
         dealed_date = datetime.datetime.strptime(date, "%Y-%m-%d")
         self.image = Image.new(
             author = DBRef("users", self.current_user._id),
@@ -505,7 +511,74 @@ class EditerHandler(BaseHandler):
 
 
 class SettingHandler(BaseHandler):
+    # $("#layout-display").html('<img class="thumbnail img-responsive" src="http://0yin.cn/static/upload/ef867cb1a7274515a810077b4d272cda.jpg" />').show()
     def get(self):
-        self.add_render('layout_options', LAYOUT_OPTIONS)
+        self.add_render('layout_options', db.layouts.find({}, {"_id": True, "name": True}).sort("name"))
         self.add_render('title', '设置')
         self.put_render("setting.html")
+    
+    @get_arg_by_list(optional = ["password", "confirm_password", "layout", "says"])
+    def post(self, password, confirm_password, layout, says):
+        print(password, layout, says)
+        for line in [password, layout, says]:
+            if line:
+                break
+        else:
+            self.error_write("setting_arg_missing")
+            return
+        
+        self.set_dict = {}
+        
+        if password:
+            if password != confirm_password:
+                self.error_write("setting_confirm_password_wrong")
+                return
+            if not password_check(password):
+                self.error_write("setting_password_format_wrong")
+                return
+            self.set_dict["password"] = encrypt_password(password)
+        
+        if layout and (not self.current_user.layout or layout != self.current_user.layout._id):
+            if not db.layouts.find_one({"_id": layout}):
+                self.error_write("setting_no_layout")
+                return
+            self.set_dict["layout"] = DBRef("layouts", layout)
+        
+        if says and (not self.current_user.says or says != self.current_user.says):
+            self.set_dict["says"] = says
+        
+        if len(self.set_dict) == 0:
+            self.error_write("setting_arg_missing")
+            return
+        
+        result = db.users.update_one(
+            {"_id":self.current_user._id},
+            {
+                "$set": self.set_dict,
+                "$currentDate": {"lastModified": True}
+            }
+        )
+        self.fresh_current_user()
+        
+        if self.ajax_flag:
+            self.write({
+                "status": 0,
+            })
+        else:
+            self.redirect(self.request.uri)
+
+
+    def on_finish_c(self):
+        if hasattr(self, "set_dict"):
+            if 'password' in self.set_dict:
+                self.change_session({"uid": 0})
+                self.fresh_current_user()
+            if not self.current_user.confirmed and self.current_user.layout and self.current_user.says:
+                result = db.users.update_one(
+                    {"_id":self.current_user._id},
+                    {
+                        "$set": {"confirmed": True},
+                        "$currentDate": {"lastModified": True}
+                    }
+                )
+                self.fresh_current_user()

@@ -40,8 +40,7 @@
         <span><a href="#" class="register-switch pull-right login-switchs">注册 <span class="glyphicon glyphicon-arrow-right"></span></a></span>
       </p>
     </div>
-    <form class="login" action="/LoginAndRegister/Login" method="post"
-    id="login-form">
+    <form class="login" action="/LoginAndRegister/Login" method="post" id="login-form">
       <p><input type="text" class="form-control" placeholder="邮箱" name="account" id="account" /></p>
       <p><input type="password" class="form-control" placeholder="密码" name="password" id="password" /></p>
       {% raw xsrf_form_html() %}

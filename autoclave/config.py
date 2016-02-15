@@ -60,4 +60,9 @@ ERROR_CODES = {
     "login_wrong_password": {"code": 1101, "dscp": "您输入的密码是错误的。"},
     
     "generate_unconfirmed": {"code": 1200, "dscp": "您还没有进行有效设置，无法生成图片。<a href=\"/Setting\">点击这里</a>进行设置。"},
+    
+    "setting_arg_missing": {"code": 1500, "dscp": "请您输入有效的设置。"},
+    "setting_confirm_password_wrong": {"code": 1501, "dscp": "您输入的确认密码与密码不匹配。"},
+    "setting_password_format_wrong": {"code": 1502, "dscp": "请您输入有效的密码，需要至少8位、包含字母和数字的密码。"},
+    "setting_no_layout": {"code": 1503, "dscp": "您请求的布局不存在。"},
 }

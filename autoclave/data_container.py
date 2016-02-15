@@ -37,7 +37,10 @@ def generate_base_data_class( setting ):
         def build(self, data):
             self._data = data
             self._dbref_data = {}
-        
+
+        def get_dict(self):
+            return self._data
+
         def get(self, key):
             return self._data[key] if key in self._data else None
         
@@ -72,12 +75,19 @@ def generate_base_data_class( setting ):
 
 class dbref_cell(object):
     def __init__(self, data):
+        print(data)
         self._data = data
+    
+    def get_dict(self):
+        return self._data
+    
     def __getattribute__(self, key):
-        if key in self._data:
-            return self._data[key]
-        
-        v = object.__getattribute__(self, key)
+        try:
+            v = object.__getattribute__(self, key)
+        except AttributeError as e:
+            if key in self._data:
+                return self._data[key]
+            raise AttributeError(e)
         if hasattr(v, '__get__'):
            return v.__get__(self)
         return v
