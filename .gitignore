@@ -1,6 +1,10 @@
 # Output Image
 /autoclave/static/output/*.png
 
+# Minfy static files
+/autoclave/static/js/*.min.js
+/autoclave/static/css/*.min.css
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
