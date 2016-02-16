@@ -1,2 +1,2 @@
 import autoclave
-autoclave.start_server(False)
+autoclave.start_server(True)
