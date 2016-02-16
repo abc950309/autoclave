@@ -144,7 +144,7 @@ class ImageGenerator:
         if not layout['qmark_font']:
             layout['qmark_font'] = os.path.join(os.path.dirname(__file__), "font", "qmark.ttf")
         if not layout['says_font']:
-            layout['says_font'] = os.path.join(os.path.dirname(__file__), "font", "says.otf")
+            layout['says_font'] = os.path.join(os.path.dirname(__file__), "font", "says.ttf")
                 
         self.text_font = ImageFont.truetype(layout['text_font'], layout['text_size'])
         self.date_font = ImageFont.truetype(layout['date_font'], layout['date_size'])
