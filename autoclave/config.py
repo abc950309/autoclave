@@ -26,6 +26,7 @@ USER_DATA_CONF = {
     "says" : "Direct",
     "layout" : "DBRef",
     "confirmed": "Direct",
+    "email_confirmed": "Direct",
 }
 
 SESSION_DATA_CONF = {
@@ -53,6 +54,15 @@ PAIR_CODE_DATA_CONF = {
     "_id": "Direct",
     "code": "Direct",
     "pair_to": "DBRef",
+    "lastModified" : "Direct",
+}
+
+EMAIL_CODE_EXPIRED_TIME = 7 * 24 * 3600
+EMAIL_CODE_DATA_CONF = {
+    "_id": "Direct",
+    "code": "Direct",
+    "user": "DBRef",
+    "expired": "Direct",
     "lastModified" : "Direct",
 }
 

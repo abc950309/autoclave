@@ -19,6 +19,7 @@ $( document ).ready(function() {
         var old_button_text = button.html();
         if ( form.hasClass("register") ) {
             button.html('<i class="fa fa-spinner fa-spin"></i> 注册中');
+            next = "/Setting/Email"
         } else if ( form.hasClass("login") ) {
             button.html('<i class="fa fa-spinner fa-spin"></i> 登陆中');
         }

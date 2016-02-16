@@ -24,6 +24,7 @@ def start_server(debug = DEBUG, listen_port = LISTEN_PORT):
             (r"/", handlers.IndexHandler),
             (r"/LoginAndRegister", handlers.LoginAndRegisterHandler),
             (r"/LoginAndRegister/(\w+)", handlers.LoginAndRegisterHandler),
+            (r"/LoginAndRegister/(EmailConfirm)/([0-9A-F]+)", handlers.LoginAndRegisterHandler),
             (r"/Editer", handlers.EditerHandler),
             (r"/Setting", handlers.SettingHandler),
             (r"/Setting/(\w+)", handlers.SettingHandler),

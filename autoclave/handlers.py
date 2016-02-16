@@ -2,6 +2,12 @@ import tornado.ioloop
 import tornado.web
 import tornado.autoreload
 
+import smtplib
+import email.mime.multipart
+import email.mime.text
+import email.mime.image
+from email.header import Header
+
 import os
 import os.path
 import datetime
@@ -270,10 +276,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 "dscp": ERROR_CODES[error_name]['dscp'],
             })
         else:
-            self.write({
-                "status": ERROR_CODES[error_name]['code'],
-                "dscp": ERROR_CODES[error_name]['dscp'],
-            })
+            return self.redirect("/" + self.class_name.replace("Handler", "") + "?show_type=danger&show_text=" + ERROR_CODES[error_name]['dscp'])
     
     def add_js(self, name):
         if 'custom_js' not in self.render_data:
@@ -297,13 +300,18 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class LoginAndRegisterHandler(BaseHandler):
     
-    def get(self, path = None):
+    @get_arg_by_list(optional = ["show_type", "show_text"])
+    def get(self, path = None, email_code = None, show_type = None, show_text = None):
         if path == "Logout":
-            self._get_path_logout()
-            return
+            return self._get_path_logout()
+        if path == "EmailConfirm":
+            return self._get_path_email_confirm(email_code)
         next = self.get_argument('next', '/')
         if self.current_user:
             self.redirect(next)
+        
+        self.add_render('show_type', show_type)
+        self.add_render('show_text', show_text)
         
         self.add_js("login")
         
@@ -326,13 +334,40 @@ class LoginAndRegisterHandler(BaseHandler):
             raise tornado.web.HTTPError(400)
             self.finish()
     
+    
     def _get_path_logout(self):
         self.change_session({"uid": 0})
         self.fresh_current_user()
         self.redirect(self.get_login_url())
     
+    
+    def _get_path_email_confirm(self, email_code):
+        code = models.EmailCode.get4db(
+            db.email_codes.find_one({"code": email_code})
+        )
+        
+        if not code:
+            self.redirect("/LoginAndRegister?show_type=danger&show_text=您使用的邮箱确认代码已失效！")
+            return
+        
+        db.users.update_one(
+            {"_id": code.user._id},
+            {
+                "$set": {"email_confirmed": True},
+                "$currentDate": {"lastModified": True}
+            }
+        )
+        code.destroy()
+        self.fresh_current_user(code.user._id)
+        if self.current_user:
+            self.redirect("/Setting?show_type=success&show_text=邮箱确认成功！")
+        else:
+            self.redirect("/LoginAndRegister?show_type=success&show_text=邮箱确认成功！")
+    
+    
     def _post_path_login_verif(self):
         self.finish()
+    
     
     @get_arg_by_list(["account", "password"])
     def _post_path_login(self, account, password):
@@ -492,7 +527,19 @@ class EditerHandler(BaseHandler):
 
 class SettingHandler(BaseHandler):
     
-    def get(self):
+    @get_arg_by_list(optional = ["show_type", "show_text"])
+    def get(self, path = None, show_type = None, show_text = None):
+        if path:
+            if path == "Email":
+                self._get_path_email()
+                return
+            else:
+                raise tornado.web.HTTPError(400)
+                return
+        
+        self.add_render('show_type', show_type)
+        self.add_render('show_text', show_text)
+        
         self.add_js("setting")
         
         self.add_render(
@@ -507,6 +554,9 @@ class SettingHandler(BaseHandler):
     
     @get_arg_by_list(optional = ["password", "confirm_password", "layout", "says", "pair_code"])
     def post(self, password, confirm_password, layout, says, pair_code):
+        if not self.current_user.email_confirmed:
+            return self.redirect("/Setting?show_type=warning&show_text=您需要确认邮箱，才可更改设置。")
+        
         for line in [password, layout, says]:
             if line:
                 break
@@ -562,7 +612,38 @@ class SettingHandler(BaseHandler):
                 "status": 0,
             })
         else:
-            self.redirect(self.request.uri)
+            return self.redirect("/Setting?show_type=success&show_text=设置成功！")
+    
+    def _get_path_email(self):
+        smtp=smtplib.SMTP()
+        smtp.connect('smtp.exmail.qq.com','25')
+        smtp.login('no-reply@samcui.com','bff0bf14b0282f965cca1c63b9d2bca2')
+        
+        msg=email.mime.multipart.MIMEMultipart()
+        msg['From'] = '<no-reply@samcui.com>'
+        msg['To'] = self.current_user.account
+        msg['Subject'] = self.current_user.name + '，' + SITE_TITLE + '提供的验证邮件'
+        
+        old_code = models.EmailCode.get4db(db.email_codes.find_one({"user": DBRef("users", self.current_user._id)}))
+        if old_code:
+            old_code.destroy()
+        
+        content_mail = self.render_string(
+            'mail.html',
+            email_code = models.EmailCode.new(DBRef("users", self.current_user._id)).code
+        ).decode()
+        txt=email.mime.text.MIMEText(content_mail, 'html')
+        msg.attach(txt)
+        
+        smtp.sendmail('no-reply@samcui.com', self.current_user.account, str(msg))
+        smtp.quit()
+        
+        if self.ajax_flag:
+            self.write({
+                "status": 0,
+            })
+        else:
+            self.redirect("/Setting?show_type=success&show_text=确认邮件发送成功！")
     
     def delete(self, path = None):
         if path == "Pair":

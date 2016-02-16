@@ -6,6 +6,13 @@
 <form class="form-horizontal" method="post">
   {% raw xsrf_form_html() %}
   <div class="form-group">
+    <label name="account" for="account" class="col-sm-2 control-label">账户</label>
+    <div class="col-sm-10">
+      <div class="form-control-static inline-block">{{ current_user.account }}{% raw '' if current_user.email_confirmed else ' （未确认）' %}</div>
+      {% if not current_user.email_confirmed %}<a href="/Setting/Email" id="resend-email" class="btn btn-info">重新发送确认邮件</a>{% end %}
+    </div>
+  </div>
+  <div class="form-group">
     <label name="password" for="password" class="col-sm-2 control-label">更改密码</label>
     <div class="col-sm-10">
       <input type="password" class="form-control" name="password" id="password" placeholder="更改密码" />
@@ -56,4 +63,10 @@
     </div>
   </div>
 </form>
+<script>
+    var email_confirmed = {% raw json_encode(current_user.email_confirmed) %};
+    {% if show_type %}
+        var alert_bar = "<div class=\"alert alert-{{ show_type }}\" role=\"alert\">{{ show_text }}</div>"
+    {% end %}
+</script>
 {% end %}

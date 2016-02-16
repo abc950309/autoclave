@@ -24,7 +24,7 @@
       <p><input type="password" class="form-control" placeholder="确认密码" name="confirm_password" id="confirm-password" /></p>
       {% raw xsrf_form_html() %}
       <p><button class="btn btn-primary register-btn submit" type="submit">注册</button></p>
-      <p class="failure"></p>
+      <p class="failure" id="failure-register"></p>
     </form>
   </div>
   <div class="view view-login">
@@ -45,7 +45,7 @@
       <p><input type="password" class="form-control" placeholder="密码" name="password" id="password" /></p>
       {% raw xsrf_form_html() %}
       <p><button class="btn btn-primary login-btn submit" type="submit">登陆</button></p>
-      <p class="failure"></p>
+      <p class="failure" id="failure-login"></p>
     </form>
     <p><span><a class="unable-login-switch login-switchs" href="#">无法登陆？</a></span></p>
   </div>
@@ -58,5 +58,12 @@
     </p>
   </div>
 </div>
-<script type="text/javascript">var next = {% raw json_encode(next) %}</script>
+<script type="text/javascript">
+    var next = {% raw json_encode(next) %};
+    {% if show_type %}
+        var alert_bar = "<div class=\"alert alert-{{ show_type }}\" role=\"alert\">{{ show_text }}</div>"
+        document.getElementById("failure-register").innerHTML=alert_bar;
+        document.getElementById("failure-login").innerHTML=alert_bar;
+    {% end %}
+</script>
 {% end %}

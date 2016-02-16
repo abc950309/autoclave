@@ -11,6 +11,7 @@ import autoclave.data_container as data_container
 from autoclave import db
 from autoclave.handlers import caches
 
+
 class User(data_container.generate_base_data_class(USER_DATA_CONF)):
     
     global caches
@@ -134,3 +135,33 @@ class PairCode(data_container.generate_base_data_class(PAIR_CODE_DATA_CONF)):
     
     def destroy(self):
         db.pair_codes.remove({ "_id": self._id })
+
+
+class EmailCode(data_container.generate_base_data_class(EMAIL_CODE_DATA_CONF)):
+    def __init__(self, data):
+        self.build(data)
+
+    @staticmethod
+    def get4db(data):
+        if data and int(time.time()) < data['expired']:
+            return EmailCode(data)
+        return None
+    
+    @staticmethod
+    def new(user):
+        while True:
+            id = str(uuid.uuid4().hex)
+            if not db.email_codes.find_one({"code": id[0:16].upper()}):
+                break
+        db.email_codes.insert(
+            {
+                "_id": id,
+                "code": id[0:16].upper(),
+                "user": user,
+                "expired": int(time.time()) + EMAIL_CODE_EXPIRED_TIME,
+            }
+        )
+        return EmailCode(db.email_codes.find_one({"_id": id}))
+    
+    def destroy(self):
+        db.email_codes.remove({ "_id": self._id })
