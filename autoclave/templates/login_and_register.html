@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="login-form-base">
-  <div class="view view-register selected">
+<div id="login-form-base" class="row">
+  <div id="example-image" class="col-sm-offset-3 col-sm-6">
+    <img class="thumbnail img-responsive" src="{{static_url('image/example.png')}}">
+  </div>
+  <div class="view view-register col-sm-offset-3 col-sm-6 selected">
     <div class="mobi-font">
       <p>
         <span><a href="#" class="return-switch login-switchs"><span class="glyphicon glyphicon-arrow-left"></span> 返回</a></span>
@@ -19,7 +22,7 @@
     </div>
     <form class="register" action="/LoginAndRegister/Register" method="post" id="register-form">
       <p><input type="text" class="form-control" placeholder="姓名" name="name" id="name" /></p>
-      <p><input type="text" class="form-control" placeholder="邮箱" name="account" id="account" /></p>
+      <p><input type="email" class="form-control" placeholder="邮箱" name="account" id="account" /></p>
       <p><input type="password" class="form-control" placeholder="密码" name="password" id="password" /></p>
       <p><input type="password" class="form-control" placeholder="确认密码" name="confirm_password" id="confirm-password" /></p>
       {% raw xsrf_form_html() %}
@@ -27,7 +30,7 @@
       <p class="failure" id="failure-register"></p>
     </form>
   </div>
-  <div class="view view-login">
+  <div class="view view-login col-sm-offset-3 col-sm-6">
     <div class="mobi-font">
       <p>
         <span><a href="#" class="return-switch login-switchs"><span class="glyphicon glyphicon-arrow-left"></span> 返回</a></span>
@@ -41,7 +44,7 @@
       </p>
     </div>
     <form class="login" action="/LoginAndRegister/Login" method="post" id="login-form">
-      <p><input type="text" class="form-control" placeholder="邮箱" name="account" id="account" /></p>
+      <p><input type="email" class="form-control" placeholder="邮箱" name="account" id="account" /></p>
       <p><input type="password" class="form-control" placeholder="密码" name="password" id="password" /></p>
       {% raw xsrf_form_html() %}
       <p><button class="btn btn-primary login-btn submit" type="submit">登陆</button></p>

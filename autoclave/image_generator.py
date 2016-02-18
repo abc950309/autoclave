@@ -162,7 +162,7 @@ class ImageGenerator:
                 start = end
             end = end + 1
         
-        wraped_list.append(text[start:end+1])
+        wraped_list.append((text[start:end+1]).strip())
         return wraped_list
 
     def generate(self, text, says, date = None):

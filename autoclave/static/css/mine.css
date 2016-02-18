@@ -11,15 +11,8 @@ body {
     padding: 0px 15px 10px;
 }
 
-#login-form-base {
-    display: table;
-    margin: 0 auto;
-}
-
 #login-form-base .view,.mobi-switches {
     display: none;
-    width: 250px;
-    margin: 38px 0;
 }
 
 #login-form-base .view.selected {
@@ -42,13 +35,17 @@ body {
     display: none;
 }
 
-@media (min-width :768px) {
+@media (min-width: 768px) {
     .mobi-font {
         display: none;
     }
 
     .desk-font {
         display: block;
+    }
+    
+    #example-image {
+        margin-top: 15px;
     }
 }
 

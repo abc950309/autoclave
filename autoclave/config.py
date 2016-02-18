@@ -1,6 +1,6 @@
 import os.path
 
-SITE_TITLE = "为燕权设计的鸡汤高压釜"
+SITE_TITLE = "鸡汤高压釜"
 
 EXPIRED_TIME = 30 * 24 * 60 * 60
 COOKIE_SECRET = "PaWCfl8/RriuXAHSL2f7tebQY+uIIEMWnnHXJiiHuJ8="
